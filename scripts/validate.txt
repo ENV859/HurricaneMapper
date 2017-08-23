@@ -1,0 +1,60 @@
+import arcpy
+class ToolValidator(object):
+  """Class for validating a tool's parameter values and controlling
+  the behavior of the tool's dialog."""
+
+  def __init__(self):
+    """Setup arcpy and the list of tool parameters."""
+    self.params = arcpy.GetParameterInfo()
+    # Create a dictionary of storm names by year
+    self.stormDict = {}
+    stormTable = arcpy.env.workspace + '/StormNames.dbf' # Needs to be in data folder
+    rows = arcpy.SearchCursor(stormTable)
+    row = rows.next()
+    while row:
+      year = row.Season
+      name = row.Name
+      if self.stormDict.has_key(year): #update the year entry
+        nameList = self.stormDict[year]
+        nameList.append(name)
+        self.stormDict[year] = nameList
+      else: #create the entry
+        self.stormDict[year] = [name]
+      row = rows.next()
+    return
+
+  def initializeParameters(self):
+    """Refine the properties of a tool's parameters.  This method is
+    called when the tool is opened."""
+    self.params[0].filter.list = self.stormDict.keys()                  #Filter list = keys (list of years)
+    self.params[0].value = self.params[0].filter.list[-1]               #Set initial value to last item
+    self.params[1].filter.list = self.stormDict[self.params[0].value]   #Filter list = values of selected year
+    self.params[1].value = self.params[1].filter.list[0]                #Set initial value to first name
+    self.params[2].value = "Track_%s_%s.shp" %(self.params[1].value,self.params[0].value)
+    self.params[3].value = "Counties_%s_%s.shp" %(self.params[1].value,self.params[0].value)
+    return
+
+  def updateParameters(self):
+    """Modify the values and properties of parameters before internal
+    validation is performed.  This method is called whenever a paramater
+    has been changed."""
+    # If the season changes, update the name list and item
+    if self.params[0].altered: 
+      self.params[1].filter.list = self.stormDict[self.params[0].value]   #Filter list = values of selected year
+      if not self.params[1].value in self.params[1].filter.list:
+        self.params[1].value = self.params[1].filter.list[0]
+      #if not self.params[1].altered:
+      #  self.params[1].value = self.params[1].filter.list[0]                #Set initial value to first name
+
+    self.params[2].value = "Year%s.shp" %self.params[0].altered
+    self.params[3].value = "Name%s.shp" %self.params[1].altered
+    
+      
+    self.params[2].value = "Track_%s_%s.shp" %(self.params[1].value,self.params[0].value)
+    self.params[3].value = "Counties_%s_%s.shp" %(self.params[1].value,self.params[0].value)
+    return
+
+  def updateMessages(self):
+    """Modify the messages created by internal validation for each tool
+    parameter.  This method is called after internal validation."""
+    return
