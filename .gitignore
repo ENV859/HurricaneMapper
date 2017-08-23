@@ -1,0 +1,4 @@
+# Files to ignore on GitHub
+
+# Ignore all files in the scratch folder
+scratch/*
